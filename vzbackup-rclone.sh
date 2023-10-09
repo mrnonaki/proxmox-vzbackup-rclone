@@ -2,22 +2,22 @@
 # ./vzbackup-rclone.sh rehydrate YYYY/MM/DD file_name_encrypted.bin
 
 ############ /START CONFIG
-DRIVE_NAME="drive_backup"
+DRIVE_NAME="mukhin_dy_ydrive"
 DUMP_DIR="/mnt/pve/wd/dump" # Set this to where your vzdump files are stored
-MAX_AGE=3 # This is the age in days to keep local backup copies. Local backups older than this are deleted.
-MAX_CLOUD_AGE=31 # This is the age in days to keep cloud backup copies. Cloud backups older than this are deleted
+MAX_AGE=60                  # This is the age in days to keep local backup copies. Local backups older than this are deleted.
+MAX_CLOUD_AGE=61            # This is the age in days to keep cloud backup copies. Cloud backups older than this are deleted
 ############ /END CONFIG
 
 _bdir="$DUMP_DIR"
-RCLONE_ROOT="$DUMP_DIR/rclone"
+RCLONE_ROOT="$DUMP_DIR"
 TIME_PATH="$(date +%Y-%m-%d)"
 RCLONE_DIR="$RCLONE_ROOT/$TIME_PATH"
 COMMAND=${1}
 rehydrate=${2} #enter the date you want to rehydrate in the following format: YYYY/MM/DD
-if [ ! -z "${3}" ];then
-        CMDARCHIVE=$(echo "/${3}" | sed -e 's/\(.bin\)*$//g')
+if [ ! -z "${3}" ]; then
+    CMDARCHIVE=$(echo "/${3}" | sed -e 's/\(.bin\)*$//g')
 fi
-if [ -z ${TARGET+x} ]; then 
+if [ -z ${TARGET+x} ]; then
     tarfile=${TARFILE}
 else
     tarfile=${TARGET}
@@ -30,8 +30,8 @@ if [[ ${COMMAND} == 'rehydrate' ]]; then
     #echo "For example, today would be: $TIME_PATH"
     #read -p 'Rehydrate Date => ' rehydrate
     rclone --config /root/.config/rclone/rclone.conf \
-    --drive-chunk-size=32M copy $DRIVE_NAME:/$rehydrate$CMDARCHIVE $DUMP_DIR \
-    -v --stats=60s --transfers=16 --checkers=16
+        --drive-chunk-size=32M copy $DRIVE_NAME:/backups/$rehydrate$CMDARCHIVE $DUMP_DIR \
+        -v --stats=60s --transfers=16 --checkers=16
 fi
 
 if [[ ${COMMAND} == 'job-start' ]]; then
@@ -42,13 +42,13 @@ fi
 if [[ ${COMMAND} == 'backup-end' ]]; then
     echo "Backing up $tarfile to remote storage"
     echo "rcloning $RCLONE_DIR"
-    
+
     rclone --config /root/.config/rclone/rclone.conf \
-    --drive-chunk-size=32M copy $tarfile $DRIVE_NAME:/$TIME_PATH \
-    -v --stats=60s --transfers=16 --checkers=16
+        --drive-chunk-size=32M copy $tarfile $DRIVE_NAME:/backups/$TIME_PATH \
+        -v --stats=60s --transfers=16 --checkers=16
 fi
 
-if [[ ${COMMAND} == 'job-end' ||  ${COMMAND} == 'job-abort' ]]; then
+if [[ ${COMMAND} == 'job-end' || ${COMMAND} == 'job-abort' ]]; then
     echo "Backing up main PVE configs"
     _tdir=${TMP_DIR:-/var/tmp}
     _tdir=$(mktemp -d $_tdir/proxmox-XXXXXXXX)
@@ -80,9 +80,9 @@ if [[ ${COMMAND} == 'job-end' ||  ${COMMAND} == 'job-abort' ]]; then
     echo "rcloning $_filename4"
 
     rclone --config /root/.config/rclone/rclone.conf \
-    --drive-chunk-size=32M move $_filename4 $DRIVE_NAME:/$TIME_PATH \
-    -v --stats=60s --transfers=16 --checkers=16
+        --drive-chunk-size=32M move $_filename4 $DRIVE_NAME:/backups/$TIME_PATH \
+        -v --stats=60s --transfers=16 --checkers=16
 
     rclone --config /root/.config/rclone/rclone.conf \
-      delete --min-age ${MAX_CLOUD_AGE}d $drive:backups/
+        delete --min-age ${MAX_CLOUD_AGE}d $DRIVE_NAME:backups/
 fi
