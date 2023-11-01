@@ -2,10 +2,11 @@
 # ./vzbackup-rclone.sh rehydrate YYYY/MM/DD file_name_encrypted.bin
 
 ############ /START CONFIG
-DRIVE_NAME="mukhin_dy_ydrive"
-DUMP_DIR="/mnt/pve/wd/dump" # Set this to where your vzdump files are stored
-MAX_AGE=60                  # This is the age in days to keep local backup copies. Local backups older than this are deleted.
-MAX_CLOUD_AGE=61            # This is the age in days to keep cloud backup copies. Cloud backups older than this are deleted
+DRIVE_NAME="xxx"
+BUKKET_NAME="yyy"
+DUMP_DIR="/var/lib/vz/dump" # Set this to where your vzdump files are stored
+MAX_AGE=3                  # This is the age in days to keep local backup copies. Local backups older than this are deleted.
+MAX_CLOUD_AGE=30            # This is the age in days to keep cloud backup copies. Cloud backups older than this are deleted
 ############ /END CONFIG
 
 _bdir="$DUMP_DIR"
@@ -30,7 +31,7 @@ if [[ ${COMMAND} == 'rehydrate' ]]; then
     #echo "For example, today would be: $TIME_PATH"
     #read -p 'Rehydrate Date => ' rehydrate
     rclone --config /root/.config/rclone/rclone.conf \
-        --drive-chunk-size=32M copy $DRIVE_NAME:/backups/$rehydrate$CMDARCHIVE $DUMP_DIR \
+        --drive-chunk-size=32M copy $DRIVE_NAME:/$BUKKET_NAME/$HOSTNAME/$rehydrate$CMDARCHIVE $DUMP_DIR \
         -v --stats=60s --transfers=16 --checkers=16
 fi
 
@@ -44,7 +45,7 @@ if [[ ${COMMAND} == 'backup-end' ]]; then
     echo "rcloning $RCLONE_DIR"
 
     rclone --config /root/.config/rclone/rclone.conf \
-        --drive-chunk-size=32M copy $tarfile $DRIVE_NAME:/backups/$TIME_PATH \
+        --drive-chunk-size=32M copy $tarfile $DRIVE_NAME:/$BUKKET_NAME/$HOSTNAME/$TIME_PATH \
         -v --stats=60s --transfers=16 --checkers=16
 fi
 
@@ -80,9 +81,9 @@ if [[ ${COMMAND} == 'job-end' || ${COMMAND} == 'job-abort' ]]; then
     echo "rcloning $_filename4"
 
     rclone --config /root/.config/rclone/rclone.conf \
-        --drive-chunk-size=32M move $_filename4 $DRIVE_NAME:/backups/$TIME_PATH \
+        --drive-chunk-size=32M move $_filename4 $DRIVE_NAME:/$BUKKET_NAME/$HOSTNAME/$TIME_PATH \
         -v --stats=60s --transfers=16 --checkers=16
 
     rclone --config /root/.config/rclone/rclone.conf \
-        delete --min-age ${MAX_CLOUD_AGE}d $DRIVE_NAME:backups/
+        delete --min-age ${MAX_CLOUD_AGE}d $DRIVE_NAME:/$BUKKET_NAME/$HOSTNAME/
 fi
